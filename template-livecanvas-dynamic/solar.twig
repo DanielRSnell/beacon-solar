@@ -1,0 +1,108 @@
+	{% set input = get_any_var('search') %}
+	
+    {# Fallback #}
+    {% if input is empty %}
+	    {% set input = '3689 Stormbird Loop' %}
+	{% endif %}
+
+	{% set solar = function('handle_solar_input', input) %}
+
+<script>
+function solarCalculator() {
+    return {
+        payload: {{solar|json_encode|raw}},
+        input: "{{ input }}",
+        selected: null,
+        sub: 'subscription',
+        selectedMonthlyBill: 250, // Default selected monthly bill
+        googleMapsLoaded: false,
+        installSize: null, // Installation size in kW
+        panelCount: null, // Count of solar panels
+        coverage: null, // Percentage of energy coverage
+        beaconCost: null, // Calculated Beacon cost
+        selectedBill() {
+            this.selected = this.payload.solarPotential.financialAnalyses.find(item => item.monthlyBill.units == this.selectedMonthlyBill);
+            if (this.selected) {
+                const panelConfigIndex = this.selected.panelConfigIndex;
+                if (panelConfigIndex >= 0) {
+                    const panelConfig = this.payload.solarPotential.solarPanelConfigs[panelConfigIndex];
+                    this.panelCount = panelConfig.panelsCount;
+                    this.calculateInstallSize(panelConfig);
+                    this.coverage = this.selected.financialDetails.solarPercentage;
+                }
+            }
+            this.calculateBeaconCost(); // Update Beacon cost
+        },
+
+        calculateInstallSize(panelConfig) {
+        	console.log(panelConfig)
+            const panelCapacityWatts = this.payload.panelCapacityWatts;
+            this.installSize = (panelConfig.panelsCount * this.payload.solarPotential.panelCapacityWatts) / 1000; // Convert to kW
+            console.log(this.installSize)
+        },
+
+        calculateBeaconCost() {
+            if (this.selected && this.selected.leasingSavings && this.selected.leasingSavings.annualLeasingCost && this.selected.leasingSavings.annualLeasingCost.units) {
+                const annualCost = this.selected.leasingSavings.annualLeasingCost.units;
+                this.beaconCost = annualCost - (annualCost * 0.2);
+            }
+        },
+
+        initMap() {
+            if (typeof this.payload !== 'undefined' && this.payload.center) {
+                var mapOptions = {
+                    center: new google.maps.LatLng(this.payload.center.latitude, this.payload.center.longitude),
+                    zoom: 20,
+                    mapTypeId: google.maps.MapTypeId.HYBRID,
+                    disableDefaultUI: true
+                };
+
+                var map = new google.maps.Map(document.getElementById('iframe-container'), mapOptions);
+
+                var marker = new google.maps.Marker({
+                    position: mapOptions.center,
+                    map: map,
+                    title: this.payload.input
+                });
+            } else {
+                console.error('Payload object is not defined.');
+            }
+        },
+
+        loadGoogleMapsScript() {
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCyRJvH_6NF8xwcw-rfIe9w_FrVBBK5NzA&callback=initGoogleMaps';
+            script.async = true;
+            document.head.appendChild(script);
+
+            window.initGoogleMaps = () => {
+                this.googleMapsLoaded = true;
+                this.initMap();
+            };
+        },
+
+        init() {
+            this.loadGoogleMapsScript(); // Load Google Maps script
+            this.selectedBill(); // Select default bill value on load
+        },
+        currencyValue(amount) {
+            // Convert to integer to remove decimal places
+            let formattedAmount = parseInt(amount).toString();
+
+            // Add commas for thousands
+            formattedAmount = formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+            // Add the dollar sign
+            return '$' + formattedAmount;
+        },
+        roundValue(number) {
+            return Math.round(number);
+        },
+        getSq(areaMeters2) {
+                const squareFeetPerMeter = 10.7639;
+                return Math.round(areaMeters2 * squareFeetPerMeter);
+            },
+        };
+}
+
+</script>

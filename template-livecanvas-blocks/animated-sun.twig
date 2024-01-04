@@ -1,0 +1,14 @@
+{% if size is not defined %}
+     {% set size = 'max-w-2xl' %}
+{% endif %}
+
+
+<div class="hidden lg:block absolute -translate-x-1/2 container -translate-y-1/2 py-24 flex w-full justify-center items-center -z-5 {{ size }}">
+      <div id="sphere" class="min-h-96 w-full rounded-full bg-gradient-to-br from-orange-500/30 to-yellow-400/70 aspect-square">
+              <div id="sphere_2" class="min-h-96 scale-90 w-full rounded-full bg-gradient-to-br from-orange-300/80 to-yellow-200/80 aspect-square backdrop-blur-md shadow-2xl shadow-yellow-600">
+                 <div id="sphere_3" class="min-h-96 scale-90 w-full rounded-full bg-gradient-to-br from-orange-400/60 to-yellow-400/60 aspect-square backdrop-blur-md">
+                   
+                </div>
+          </div>
+      </div>
+</div>
